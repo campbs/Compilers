@@ -1,0 +1,363 @@
+
+/* Compilers assignment 
+Suzanne Campbell
+13362066
+*/
+/****************************** 
+***** SECTION 1 - OPTIONS ***** 
+*******************************/
+options {
+    JAVA_UNICODE_ESCAPE = true;
+    IGNORE_CASE = true;
+}
+
+/********************************* 
+***** SECTION 2 - USER CODE ****** 
+**********************************/
+//Code from notes;
+
+PARSER_BEGIN(CCALParser)
+class CCALParser {
+    public static void main(String[] args) throws ParseException, TokenMgrError, NumberFormatException{
+            CCALParser parser; //initialising parser
+            if (args.length == 0) {
+                System.out.println("CCAL Parser: Reading from standard input . . .");
+                parser = new CCALParser( System.in ) ;
+
+            } else if (args.length == 1){
+                System.out.println("CCAL Parser: Reading from file" + args[0] +" . . .");                
+                try{
+                    parser = new CCALParser(new java.io.FileInputStream(args[0]));
+                } catch(java.io.FileNotFoundException e) {
+                    System.out.println("CCAL Parser: File "+ args[0] + " not found.");
+                    return;
+                }
+            } else {
+                System.out.println("CCAL Parse: Usage is one of:");
+                System.out.println("        java CCALParser <inputfile");
+                System.out.println("OR");
+                System.out.println("java CCALParser inputfile");
+                return;
+            }
+            try {
+                parser.program(); //starting to run the parser
+                System.out.println("CCAL Parser: CCAL program parsed successfully");
+            }
+            catch (ParseException e){
+                System.out.println(e.getMessage());
+                System.out.println("CCALParser: Encountered errors during parse.");
+            }            
+        }
+    }
+PARSER_END(CCALParser)
+
+/***************************************** 
+***** SECTION 3 - Token Definitions ***** 
+*****************************************/
+
+TOKEN_MGR_DECLS : {
+    static int commentNesting = 0; 
+}
+
+SKIP : { 
+        " "
+    |   "\n" | "\r" | "\r\n"
+}
+
+//Single line comment
+SKIP : 
+{
+    <"//" (~["\n","\r"])* ("\n" | "\r" | "\r\n")>
+}
+
+//Multiline comment and nested comments. - From notes
+SKIP : 
+{
+   "/*" { commentNesting++; } : IN_COMMENT
+}
+<IN_COMMENT> SKIP :
+{
+        "/*" { commentNesting++; }
+    |   "*/" { commentNesting--; 
+                if (commentNesting == 0)
+                    SwitchTo(DEFAULT); 
+             }
+    | <~[]>
+}
+
+//Operators
+TOKEN :
+{
+        < COMMA : "," >
+    |   < SEMICOLON : ";" >
+    |   < COLON : ":" >
+    |   < ASSIGNMENT : "=" >
+    |   < LB : "(" >
+    |   < RB : ")" >
+    |   < PLUS : "+" >
+    |   < MINUS : "-" >
+    |   < TILDA : "~" >
+    |   < OR : "||" >
+    |   < AND : "&&" >
+    |   < EQUALTO : "==" >  
+    |   < NOTEQUALTO : "!=" >
+    |   < LESSTHAN : "<" >
+    |   < GREATERTHAN : ">" >
+    |   < LESSTHANEQUALTO : "<=" >
+    |   < GREATERTHANEQUALTO : ">=" >
+}
+
+//reserved words
+TOKEN : 
+{ 
+        <VAR: "var" >
+    |   <CONST: "const">
+    |   <RETURN: "return">
+    |   <INTEGER: "integer">
+    |   <BOOL: "boolean">
+    |   <VOID: "void">
+    |   <MAIN: "main">
+    |   <IF: "if">
+    |   <ELSE: "else">
+    |   <TRUE: "true">
+    |   <FALSE: "false">
+    |   <WHILE: "while">
+    |   <BEGIN: "begin">
+    |   <END: "end">
+    |   <IS: "is">
+    |   <SKIPOVER: "skip">
+}
+
+//Numbers and Identifiers
+TOKEN :
+{
+        
+        < INTEGERS : "0" | ((<MINUS>)? (<DIGIT>) (<DIGITS>)) > 
+    |   < #DIGIT : ["1"-"9"]>
+    |   < #DIGITS : (["0"-"9"])* >
+    |   < #LETTER : ["a"-"z","A"-"Z"] >
+    |   < IDENTIFIER : <LETTER> (<LETTER> | <DIGITS> | "_")* >
+}
+
+TOKEN :  
+{
+    < OTHER : ~[] > 
+}
+
+/************************************************* 
+***** SECTION 4 - Grammer & Production rules ***** 
+**************************************************/
+
+void program() :
+{
+}
+{
+    {System.out.println("inside prog");}
+    
+    decl_list() function_list() main()
+}
+
+void decl_list() :
+{
+}
+{
+    {System.out.println("inside decl_list");}
+    
+    (decl()<SEMICOLON>decl_list() | {})
+}
+
+void decl() :
+{
+}
+{
+    {System.out.println("inside decl");}
+        
+        var_decl()
+    |   const_decl()
+}
+
+void var_decl() :
+{
+}
+{
+    {System.out.println("inside var_decl");}
+    <VAR><IDENTIFIER><COLON>type()
+}
+
+void const_decl() :
+{
+}
+{
+    {System.out.println("inside const_decl");}
+    
+    <CONST><IDENTIFIER><COLON>type()<ASSIGNMENT>expression()
+}
+
+void function_list() :
+{
+}
+{
+    {System.out.println("inside funclist");}
+    
+        (function()function_list() | {})
+}
+
+void function() :
+{
+}
+{
+    {System.out.println("inside function");}
+    
+    type()<IDENTIFIER><LB>parameter_list()<RB>
+    <IS>decl_list()<BEGIN>
+    statement_block()<RETURN>
+    <LB>(expression() | {})<RB><SEMICOLON><END>
+}
+
+void type() :
+{
+}
+{
+    {System.out.println("inside type");}
+        <INTEGER>
+    |   <BOOL>
+    |   <VOID>
+}
+
+void parameter_list() :
+{
+}
+{
+    {System.out.println("inside parameter_list ");}
+    
+        nemp_parameter_list() | {}
+}
+
+void nemp_parameter_list() :
+{
+}
+{
+    {System.out.println("inside nempparamlist");}
+    
+        <IDENTIFIER><COLON>type()
+        [<COMMA>nemp_parameter_list()]
+}
+
+void main() :
+{
+}
+{
+    {System.out.println("inside main");}
+    
+    <MAIN><BEGIN>decl_list()statement_block()<END>
+}
+
+void statement_block() :
+{
+}
+{
+    {System.out.println("inside statment block");}
+        
+        (statement() statement_block()) ?
+}
+
+void statement() :
+{
+}
+{
+    {System.out.println("inside statmemnt");} 
+
+        <IDENTIFIER>(((<ASSIGNMENT>)(expression())) | ((<LB>)(arg_list())(<RB>))) (<SEMICOLON>)
+    |   <BEGIN>statement_block()<END>
+    |   <IF>condition()<BEGIN>statement_block()<END><ELSE><BEGIN>statement_block()<END>  
+    |   <WHILE>condition()<BEGIN>statement_block()<END>  
+    |   <SKIPOVER><SEMICOLON>
+}
+
+void fragment() :
+{
+}
+{
+    {System.out.println("inside fragment");}
+        <IDENTIFIER>[<LB>arg_list()<RB>]
+    |   <MINUS><IDENTIFIER>
+    |   <INTEGERS>
+    |   <TRUE>
+    |   <FALSE>
+}
+
+void expression() :
+{
+}
+{
+    {System.out.println("inside exp");}
+        (fragment() | (<LB>expression()<RB>)) [binary_arith_op()expression()]
+}
+
+void binary_arith_op() :
+{
+}
+{
+    {System.out.println("inside binaryop");}
+    
+        <PLUS>
+    |   <MINUS>
+}
+
+
+
+void condition() :
+{
+}
+{
+    {System.out.println("inside condition");}
+    
+        <TILDA>condition() simpleCondition()
+    |   LOOKAHEAD(3)(<LB>condition()<RB> simpleCondition())
+    |   expression() comp_op() expression() simpleCondition()
+}
+
+void simpleCondition() :
+{
+}
+{
+    {System.out.println("inside simple condition");}
+        (<OR>|<AND>) condition()simpleCondition()
+    |   {} 
+}
+
+
+
+void comp_op() :
+{
+}
+{   
+    {System.out.println("inside compop");}
+    
+        <EQUALTO>
+    |   <NOTEQUALTO>
+    |   <LESSTHAN>
+    |   <LESSTHANEQUALTO>
+    |   <GREATERTHAN>
+    |   <GREATERTHANEQUALTO>
+}
+
+void arg_list() :
+{
+}
+{
+    {System.out.println("inside arglist");}
+    
+        (nemp_arg_list()) ?
+
+}
+
+void nemp_arg_list() :
+{  
+}
+{
+    {System.out.println("in nemp_arg_list()");}
+        <IDENTIFIER>
+       [<COMMA> nemp_arg_list()]
+    
+}
